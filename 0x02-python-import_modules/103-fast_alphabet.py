@@ -1,4 +1,3 @@
 #!/usr/bin/python3
-#Print uppercase alphabeths#
-import string
-print(string.ascii_uppercase)
+# Print uppercase alphabeths #
+print(*map(chr, range(65, 91)), sep='', end="\n")

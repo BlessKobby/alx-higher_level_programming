@@ -1,34 +1,41 @@
 #!/usr/bin/python3
+"""
+Script that lists all State objects, and corresponding City objects,
+contained in the database hbtn_0e_101_usa.
+"""
 
-""" lists all State objects, and corresponding City objects,
-contained in the database """
+import sys
+from model_state import Base, State
+from model_city import City
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 if __name__ == "__main__":
+    if len(sys.argv) != 4:
+        print("Usage: {} username password database".format(sys.argv[0]))
+        sys.exit(1)
 
-    import sys
-    from sqlalchemy import create_engine
-    from sqlalchemy.ext.declarative import declarative_base
-    from sqlalchemy.orm import sessionmaker
-    from relationship_city import City
-    from relationship_state import Base, State
+    username, password, database = sys.argv[1], sys.argv[2], sys.argv[3]
 
-    inp = sys.argv
-    if len(inp) < 4:
-        exit(1)
+    # Create an engine to connect to the MySQL server
+    engine = create_engine('mysql+mysqldb://{}:{}@localhost:3306/{}'.
+                           format(username, password, database), pool_pre_ping=True)
 
-    conn_str = "mysql+mysqldb://{}:{}@localhost:3306/{}"
-    engine = create_engine(conn_str.format(inp[1], inp[2], inp[3]))
+    # Create a configured "Session" class
     Session = sessionmaker(bind=engine)
 
-    Base.metadata.create_all(engine)
-
+    # Create a Session instance
     session = Session()
-    my_query = session.query(State) \
-                      .order_by(State.id) \
-                      .all()
-    for state in my_query:
-        print("{}: {}".format(state.id, state.name))
-        for city in state.cities:
-            print("\t{}: {}".format(city.id, city.name))
 
+    # Query to get all State objects and their corresponding City objects
+    result = (session.query(State, City)
+              .join(City, State.id == City.state_id)
+              .order_by(State.id, City.id)
+              .all())
+
+    # Display results
+    for state, city in result:
+        print("{}: ({}) {}".format(state.name, city.id, city.name))
+
+    # Close the session
     session.close()
